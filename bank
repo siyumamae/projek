@@ -18,16 +18,31 @@ Atm()
 HalUtama()
 {
 	clear
-	echo ""
-	echo "						BANK			"
-	echo "			(This option is only used by Administrator for Registering new nasabah bank)"
-	echo ""
-	echo " 			1. Buat Rekening Baru"
-	#echo "2. Buat Rekening Baru COMPANY"
-	echo ""
+	echo "                                          BANK                    "
+        echo "                  (This option is only used by Administrator for Registering new nasabah bank)"
+        echo ""
+        echo "                  1. Buat Rekening Baru						2. Login Menu "
+        echo ""
 	echo ""
 	echo ""
+	echo "						*Warning: you must have a bank account to login*"
 	echo ""
+	echo ""
+	read choice
+	
+	case $choice in
+		1) BuatRekBaru;;
+		2) LoginMenu;;
+		0) clear
+			exit;;
+		*) HalUtama ;;
+	esac
+
+}
+
+LoginMenu()
+{
+	clear
 	echo ""
 	echo "					CHOOSE TRANSACTION PLATFORM	"
 	echo ""
@@ -36,51 +51,17 @@ HalUtama()
 	echo " 		ATM 									E-Payment"
 	echo " (Physicaly insert a card through the ATM)				(Using CICIT PAY E-Payment Platform)"	
 	echo ""
-        echo "3. Insert Card to atm machine								4. Enter CICIT PAY"
+        echo " 1. Insert Card to atm machine							2. Enter CICIT PAY"
 	echo ""
 	echo ""
         read pilihan
         
 	case $pilihan in 
-		1) BuatRekBaru ;;
-		2) CompanyBaru ;;
-		3) Login ;;
-		4) UserLogin ;;
-		*) HalUtama ;;
+		1) ATMLogin ;;
+		2) CicitLogin ;;
+		0) HalUtama ;;
+		*) LoginMenu ;;
 	esac
-}
-
-CompanyBaru()
-{
-	clear
-	local stats=0
-	echo "BUAT REKENING COMPANY BARU"
-	read -p "Masukan Nama Company:	" nama
-	read -p "Masukan KODE BANK:	" company_id	
-	stats=$(mysql projek -se "SELECT EXISTS(SELECT company_id FROM company WHERE company_id = $company_id)")
-	if [ $stats -eq 1 ]
-	then
-		echo "code used"
-		read
-		CompanyBaru
-	else 
-		echo ""
-		BuatCompany
-		echo "YOUR NEW COMPANY ACCOUNT"
-		echo "Rekening anda:	$(mysql projek -se " SELECT rek_id FROM rekening ORDER BY rek_id DESC LIMIT 1")"
-		echo "ID Company: $company_id (ID digunakan sebagai referensi ke rekening)"
-		echo "Nama	: "$nama""
-		echo ""
-		echo ""
-		read
-		HalUtama
-	fi
-}
-
-BuatCompany()
-{
-	mysql projek -se "INSERT INTO rekening VALUES(default, 1000000);"
-	mysql projek -se "INSERT INTO company VALUES($company_id,'$nama', (SELECT rek_id FROM rekening ORDER BY rek_id desc LIMIT 1))"
 }
 
 BuatRekBaru()
@@ -91,8 +72,8 @@ BuatRekBaru()
 	read -p "Masukan NIK: 		|" nasabah_id
 	read -p "Masukan Email		|" email
 	read -p "No Hape:		|" noHape
-	read -p "Alamat:			|" alamat
-	read -p "Setor Awal(min. 500000): |" set_aw
+	read -p "Alamat:		|" alamat
+	read -p "Setor Awal(min. 500000):|" set_aw
 	echo ""
 
 	if [[ $noHape =~ $regextelkomsel ]] || [[ $noHape =~ $regexxl ]] || [[ $noHape =~ $regexindosat  ]];
@@ -128,9 +109,9 @@ BuatRekBaru()
 			echo ""
 			echo ""
 			read -p "enter to continue"
-			HalUtama
+			LoginMenu
 		else
-			HalUtama
+			LoginMenu
 		fi
 	else
 		echo "Setor tidak sesuai Ketentuan"
@@ -140,7 +121,7 @@ BuatRekBaru()
 else
 	echo "Nasabah_id sudah terpakai"
 	read
-	BuatRekBaru
+	HalUtama
 fi
 else
 	echo "kesalahan format pada No Handphone"
@@ -150,12 +131,6 @@ fi
 
 }
 
-BuatNasabah()
-{
-	mysql projek -se "INSERT INTO rekening VALUES(default, $6);"
-	mysql projek -se "INSERT INTO kartu VALUE(default, default, (SELECT rek_id FROM rekening ORDER BY rek_id desc Limit 1));"
-	mysql projek -se "INSERT INTO nasabah VALUE($1, '$2', '$3', '$4', '$5', (SELECT rek_id FROM rekening ORDER BY rek_id desc LIMIT 1))"
-}
 
 PrintInfo()
 {
@@ -185,7 +160,7 @@ PinCheck()
 			clear
 			echo "ACCESS DENIED"
 			read
-			HalUtama
+			LoginMenu
 		fi
         fi
 }
@@ -205,7 +180,7 @@ Login()
 		clear
 		echo "card not found"
 		read
-                HalUtama
+                LoginMenu
         fi
 
 }
@@ -217,18 +192,19 @@ Menu()
 	local rek_id="$(mysql projek -se "SELECT rek_id FROM kartu WHERE kartu_id = "$kartu_id"")"
 	local saldo="$(mysql projek -se "SELECT saldo FROM rekening WHERE rek_id = "$rek_id"")"
 	
-	echo "SETOR"
-	echo "1. Setor Tunai"
+	echo " SETOR Tarik"
+	echo " 1. Setor Tunai"
+	echo " 2. Tarik Tunai"
 	echo ""
 	echo "TRANSFER"
-	echo "2. Transfer Antar Rekening"
-	echo "3. Transfer Virtual account"
+	echo " 3. Transfer Antar Rekening"
+	echo " 4. Transfer Virtual account"
 
 	echo ""
 	echo "INFO"
-	echo "4. Cek Saldo"
-	echo "5. Cek Histori"
-	echo "6. Ubah pin"
+	echo "5. Cek Saldo"
+	echo "6. Cek Histori"
+	echo "7. Ubah pin"
 	echo ""
 	echo "0. Logout"
 	echo ""
@@ -258,10 +234,10 @@ Menu()
 			Menu
 		fi;;
 
-	2)
+	3)
 		TransAntarRek $rek_id $saldo ;;
 
-	3) 	clear
+	4) 	clear
 		read -p "MASUKAN VIRTUAL ACCOUNT(15-17): " virtual
 		regex="^[0-9]{15,17}$"
 		if [[ $virtual =~ $regex ]];
@@ -274,13 +250,13 @@ Menu()
 			Menu 
 		fi ;;
 
-	4)	
+	5)	
 		CekSaldo $saldo	;;
 		
-	5)
+	6)
 		CekHistori $rek_id ;;
 
-	6)	
+	7)	
 		clear
 		echo "Ubah Pin"
 		local regexpin="^[0-9]{6}$"
@@ -301,7 +277,7 @@ Menu()
 		fi ;;
 
 	0)
-		HalUtama ;;
+		LoginMenu ;;
 	*)
 		Menu ;;
 	esac
@@ -605,7 +581,7 @@ echo "--------------------------------------------------------------------------
 		5)
 			echo"" ;;
 		0)
-			HalUtama ;;
+			LoginMenu ;;
 		*)
 			AppMenu $hp_num ;;
 	esac
