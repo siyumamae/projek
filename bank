@@ -9,7 +9,7 @@ regexxl="^08[157][789][0-9]{7,8}$"
 regexindosat="08[51][45678][0-9]{7,8}"
 
 
-Atm()
+BankSystem()
 {
 	clear
 	HalUtama
@@ -18,16 +18,19 @@ Atm()
 HalUtama()
 {
 	clear
-	echo "                                          BANK                    "
-        echo "                  (This option is only used by Administrator for Registering new nasabah bank)"
+	echo ""
+	echo "   		                                       			BANK                    "
         echo ""
-        echo "                  1. Buat Rekening Baru						2. Login Menu "
+        echo ""
+        echo "                  1. Buat Rekening Baru									2. Login Menu "
         echo ""
 	echo ""
 	echo ""
 	echo "						*Warning: you must have a bank account to login*"
 	echo ""
+	echo " 0.quit"
 	echo ""
+	echo
 	read choice
 	
 	case $choice in
@@ -48,12 +51,15 @@ LoginMenu()
 	echo ""
 	echo ""
 	echo ""
-	echo " 		ATM 									E-Payment"
-	echo " (Physicaly insert a card through the ATM)				(Using CICIT PAY E-Payment Platform)"	
+	echo " 		ATM 									 E-Payment"
+	echo " (Physicaly insert a card through the ATM)				(Mobile app using CICIT PAY E-Payment Platform)"	
 	echo ""
-        echo " 1. Insert Card to atm machine							2. Enter CICIT PAY"
+        echo " 1. Insert Card and pin to atm machine						2. Enter PhoneNumber CICIT PAY"
 	echo ""
 	echo ""
+	echo "			*WARNING: You must have a bank account to be able to acces to ATM or E-payment(CicitPay)*"
+	echo ""
+	echo " 0. Back to Main Menu"
         read pilihan
         
 	case $pilihan in 
@@ -165,7 +171,7 @@ PinCheck()
         fi
 }
 
-Login()
+ATMLogin()
 {
 	clear
 	echo "				INSERT YOUR ATM CARD"
@@ -234,6 +240,8 @@ Menu()
 			Menu
 		fi;;
 
+	2)	Tarik $rek_id $saldo ;;
+
 	3)
 		TransAntarRek $rek_id $saldo ;;
 
@@ -254,8 +262,7 @@ Menu()
 		CekSaldo $saldo	;;
 		
 	6)
-		CekHistori $rek_id ;;
-
+		CekHistori 1 $rek_id ;;
 	7)	
 		clear
 		echo "Ubah Pin"
@@ -284,20 +291,96 @@ Menu()
 
 }
 
+Tarik()
+{
+	local rek_id=$1
+	local saldo=$2
+	clear
+	echo "				TARIK TUNAI"
+	echo ""
+	echo "Masukan Jumlah Uang untuk ditarik: "
+	echo ""
+	echo " 1. 100.000			4. 1.000.000"
+	echo " 2. 300.000			5. 2.000.000"
+	echo " 3. 500.000			0. Cancel"
+	echo ""
+	read choice
+
+	case $choice in
+		1) if [ $saldo -ge 100000 ]
+                 then 
+                        mysql projek -se "UPDATE rekening SET saldo = saldo - 100000 WHERE rek_id = $rek_id"
+                        echo "Penarikan Berhasil"
+                        read
+                        Menu
+                else
+                        echo "Saldo anda tidak cukup"
+                        read
+                        Menu
+                fi ;;
+	2) if [ $saldo -ge 300000 ]
+                 then 
+                        mysql projek -se "UPDATE rekening SET saldo = saldo - 300000 WHERE rek_id = $rek_id"
+                        echo "Penarikan Berhasil"
+                        read
+                        Menu
+                else
+                        echo "Saldo anda tidak cukup"
+                        read
+                        Menu
+                fi ;;
+	3)if [ $saldo -ge 500000 ]
+                 then 
+                        mysql projek -se "UPDATE rekening SET saldo = saldo - 500000 WHERE rek_id = $rek_id"
+                        echo "Penarikan Berhasil"
+                        read
+                        Menu
+                else
+                        echo "Saldo anda tidak cukup"
+                        read
+                        Menu
+                fi ;;
+	4)if [ $saldo -ge 1000000 ]
+                 then 
+                        mysql projek -se "UPDATE rekening SET saldo = saldo - 1000000 WHERE rek_id = $rek_id"
+                        echo "Penarikan Berhasil"
+                        read
+                        Menu
+                else
+                        echo "Saldo anda tidak cukup"
+                        read
+                        Menu
+                fi ;;
+	5)if [ $saldo -ge 2000000 ]
+                 then 
+                        mysql projek -se "UPDATE rekening SET saldo = saldo - 2000000 WHERE rek_id = $rek_id"
+                        echo "Penarikan Berhasil"
+                        read
+                        Menu
+                else
+                        echo "Saldo anda tidak cukup"
+                        read
+                        Menu
+                fi ;;
+	6) Menu ;;
+	*) Tarik $rek_id $saldo ;;
+	esac
+}
+
 TransAntarRek()
 {
 	clear
 	local rek_id=$1
 	local saldo=$2
 	echo "TRANS Antar REK"
-	read -p "masukan Nomor rekening Tujuan:	" rekTujuan
+	read -p "masukan Nomor rekening Tujuan:	" rek_tujuan
 	echo ""
 	read -p "Masukan Jumlah: |Rp.|" jmlTransfer
 	echo ""
-	echo "dari	: $rek_id"
-	echo "ke	: $rekTujuan"
-	ke=$(mysql projek -se "SELECT n.nama FROM nasabah n JOIN rekening r ON r.rek_id = n.rek_id WHERE n.rek_id = $rekTujuan")
-	echo "$ke"
+	dari=$(mysql projek -se "SELECT nama FROM nasabah  WHERE rek_id = $rek_id")
+	ke=$(mysql projek -se "SELECT nama FROM nasabah  WHERE rek_id = $rek_tujuan")
+	echo "dari	: $rek_id| $dari"
+	echo "ke	: $rek_tujuan | $ke"
 	echo "Rp $jmlTransfer"
 	read
 
@@ -315,10 +398,7 @@ TransAntarRek()
 		then
 			if [ $saldo -ge $jmlTransfer ]
         		then
-                mysql projek -se "UPDATE rekening SET saldo = saldo-$jmlTransfer WHERE rek_id = $rek_id;"
-                mysql projek -se "UPDATE rekening SET saldo = saldo+$jmlTransfer WHERE rek_id = $rekTujuan;"
-                mysql projek -se "INSERT INTO histori VALUE(default, '-', $rekTujuan, $jmlTransfer, default, $rek_id);"
-                mysql projek -se "INSERT INTO histori VALUE(default, '+', $rek_id, $jmlTransfer, default, $rekTujuan)"
+				mysql projek -se "CALL TransAntarRek($jmlTransfer, '$dari', '$ke', $rek_id, $rek_tujuan)"
                 echo ""
                 echo "Transfer Sukses"
                 read
@@ -398,20 +478,72 @@ CekSaldo()
 CekHistori()
 {
 	clear
+	local counter=$1
+	local rek_id=$2
+	IFS="\t"
+	info=$(mysql projek -se "CALL CekHistori($rek_id)")
+IFS="$( echo -e '\t')"
 
-	echo "|id|	|ket|		[rek]			[jumlah]			[datetime]"
+	echo "|id|	|ket|		[nama]				[jumlah]			[datetime]			1. Toggle Merge/Split History"
 	echo ""
 while read a b c d e
 do
         echo "[${a}] 	[${b}] 		[${c}] 		[${d}] 			${e}"
-done < <(echo "$(mysql projek -se "SELECT histori_id, ket, rek_lain, jumlah, waktu FROM histori WHERE rek_id = $1 ORDER BY waktu DESC;")")
+done < <(echo "$info")
 
 echo""
-read
-Menu
+read counter
+
+case $counter in 
+	1) CekHistoriSplit $counter $rek_id;;
+	*) Menu ;;
+esac
 }
 
-UserLogin()
+CekHistoriSplit()
+{
+	clear
+	local counter=$1
+	local rek_id=$2
+	IFS="\t"
+	info1=$(mysql projek -se "CALL CekHistoriOut($rek_id)")
+
+IFS="$( echo -e '\t')"
+
+        echo "|id|     |ket|           [nama]                   [jumlah]                        [datetime]"
+        echo ""
+while read a b c d e
+do
+        echo "[${a}]    [${b}]          [${c}]          	[${d}]                  ${e}"
+done < <(echo "$info1")
+
+echo""
+echo "=============================================================================================================================================================================================="
+echo ""
+
+IFS="\t"
+info2=$(mysql projek -se "CALL CekHistoriIn($rek_id)")
+IFS="$( echo -e '\t')"
+
+
+        echo "|id|     |ket|           [nama]                   [jumlah]                        [datetime]"
+        echo ""
+while read f g h i j
+do
+        echo "[${f}]    [${g}]          [${h}]          	[${i}]                  ${j}"
+done < <(echo "$info2")
+
+echo""
+read counter
+
+case $counter in 
+	1) CekHistori $counter $rek_id ;;
+	*) Menu ;;
+esac
+
+}
+
+CicitLogin()
 {
 	clear
 	telkomsel="^08[125][123][0-9]{7,8}$"
@@ -497,7 +629,7 @@ echo "--------------------------------------------------------------------------
 	echo ""
 	echo ""
 
-	echo "7. Pin"
+	echo ""
 	echo ""
 	echo "0. Logout"
 
@@ -578,8 +710,6 @@ echo "--------------------------------------------------------------------------
 			Food $hp_num $saldo;;
 		4)
 			Pulsa $hp_num $saldo;;
-		5)
-			echo"" ;;
 		0)
 			LoginMenu ;;
 		*)
@@ -739,7 +869,9 @@ CicitHistori()
         echo ""
 
 IFS="\t"
-info=$(mysql projek -se "SELECT histori_id, jumlah, keterangan, waktu FROM cicit_histori WHERE cicit_id = 70001$1")
+local hp_num=$1
+local cicit_id=70001$hp_num
+info=$(mysql projek -se "CALL cekCicitHistori($cicit_id)")
 
 IFS="$( echo -e '\t')"
 
@@ -753,4 +885,4 @@ read
 AppMenu $hp_num
 }
 
-Atm
+BankSystem
